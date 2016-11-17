@@ -982,7 +982,7 @@ class Classpath;
 class Gc {
  public:
   enum Type {
-#include "type-enums.cpp"
+#include "type-enums.h"
   };
 };
 
@@ -1755,7 +1755,7 @@ T* cast(Thread* t UNUSED, object o)
   return reinterpret_cast<T*>(o);
 }
 
-#include "type-declarations.cpp"
+#include "type-declarations.h"
 
 inline object arrayBodyUnsafe(Thread*, GcArray* a, unsigned index)
 {

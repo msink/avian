@@ -1,0 +1,69 @@
+# The build may be influenced via certain flags described below,
+# all of which are optional.
+
+option('platform', type:'combo', choices:['','linux','windows','macosx','ios','freebsd'],
+description: '''the target platform
+                default: output of host_machine.system()''')
+
+option('arch', type:'combo', choices:['','i386','x86_64','arm','arm64'],
+description: '''the target architecture
+                default: output of host_machine.cpu_family()''')
+
+option('process', type:'combo', choices:['compile','interpret'],
+description: '''choice between pure interpreter or JIT compiler
+                default: compile''')
+
+option('mode', type:'combo', choices:['fast','small','debug','debug-fast'],
+description: '''which set of compilation flags to use to determine
+                optimization level, debug symbols, and whether to enable
+                assertions''')
+
+option('lzma', type:'string',
+description: '''lzma source directory
+                if set, support use of LZMA to compress embedded JARs and
+                boot images.  The value of this option should be a directory
+                containing a recent LZMA SDK (available [here](http://www.7-zip.org/sdk.html)).
+                Currently, only version 9.20 of the SDK has been tested,
+                but other versions might work.''')
+
+option('armv6', type: 'boolean', value: false,
+description: '''if true, don't use any instructions newer than armv6.  By
+                default, we assume the target is armv7 or later, and thus requires explicit
+                memory barrier instructions to ensure cache coherency''')
+
+option('bootimage', type: 'boolean', value: false,
+description: '''if true, create a boot image containing the pre-parsed
+                class library and ahead-of-time compiled methods.  This option is
+                only valid for process=compile builds.''')
+
+option('tails', type: 'boolean', value: false,
+description: '''if true, optimize each tail call by replacing the caller's
+                stack frame with the callee's.  This convention ensures proper
+                tail recursion, suitable for languages such as Scheme.  This
+                option is only valid for process=compile builds.''')
+
+option('continuations', type: 'boolean', value: false,
+description: '''if true, support continuations via the
+                avian.Continuations methods callWithCurrentContinuation and
+                dynamicWind.  See Continuations.java for details.  This option is
+                only valid for process=compile builds.''')
+
+option('openjdk', type: 'string',
+description: '''openjdk installation directory
+                if set, use the OpenJDK class library instead of the
+                default Avian class library.  See "Building with the OpenJDK Class
+                Library" below for details.''')
+
+option('openjdk_src', type: 'string',
+description: '''openjdk source directory
+                if this and the openjdk option above are both set,
+                build an embeddable VM using the OpenJDK class library.  The JNI
+                components of the OpenJDK class library will be built from the
+                sources found under the specified directory.  See "Building with
+                the OpenJDK Class Library" below for details.''')
+
+option('android', type: 'string',
+description: '''android source directory
+                if set, use the Android class library instead of the
+                default Avian class library.  See "Building with the Android Class
+                Library" below for details.''')

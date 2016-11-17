@@ -3244,7 +3244,7 @@ void boot(Thread* t)
       allocate(t, pad((TypeCount + 2) * BytesPerWord), true));
   m->types->length() = TypeCount;
 
-#include "type-initializations.cpp"
+#include "type-initializations.h"
 
   GcClass* arrayClass = type(t, GcArray::Type);
   setField(t, m->types, 0, arrayClass);
@@ -3357,8 +3357,8 @@ void boot(Thread* t)
         = makeMethod(t, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, bootCode);
     PROTECT(t, bootMethod);
 
-#    include "type-java-initializations.cpp"
-#    include "type-name-initializations.cpp"
+#    include "type-java-initializations.h"
+#    include "type-name-initializations.h"
 
   }
 
@@ -6170,7 +6170,7 @@ void noop()
 {
 }
 
-#include "type-constructors.cpp"
+#include "type-constructors.h"
 
 }  // namespace vm
 

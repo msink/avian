@@ -1559,7 +1559,7 @@ void writeBootImage2(Thread* t,
     typeMaps = makeHashMap(t, 0, 0);
     PROTECT(t, typeMaps);
 
-#include "type-maps.cpp"
+#include "type-maps.h"
 
     for (unsigned i = 0; i < t->m->types->length(); ++i) {
       Type* source = types[i];
