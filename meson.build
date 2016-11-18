@@ -45,8 +45,9 @@ endif
 # dependencies
 ############################################################
 
-zlib = dependency('zlib', version: '>=1.2.3')
 threads = dependency('threads')
+zlib = dependency('zlib', version: '>=1.2.3', static: true)
+zlib_native = dependency('zlib', version: '>=1.2.3', static: true, native: true)
 
 python = find_program('python3', required: false)
 if not python.found()
@@ -183,7 +184,7 @@ type_generator = executable('type_generator',
   include_directories: avian_includes,
   cpp_args: [ '-DPOINTER_SIZE=@0@'.format(pointer_size) ] + vm_cflags,
   c_args: target_cflags,
-  dependencies: [threads, zlib],
+  dependencies: [threads, zlib_native],
   native: true)
 
 generated_code = [
