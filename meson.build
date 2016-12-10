@@ -40,6 +40,8 @@ if target_arch == ''
   target_arch = target_machine.cpu_family()
   if target_arch == 'x86'
     target_arch = 'i386'
+  elif target_arch == 'arm' and target_machine.cpu() == 'aarch64'
+    target_arch = 'arm64'
   endif
 endif
 
