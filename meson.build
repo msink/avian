@@ -1,3 +1,7 @@
+############################################################
+# avian
+############################################################
+
 project('avian', ['cpp', 'c'],
   version: '1.3.0-SNAPSHOT', 
   default_options: [
@@ -120,11 +124,28 @@ vm_cflags = common_cflags + target_cflags + [
   '-DAVIAN_EMBED_PREFIX="' + embed_prefix + '"',
 ]
 
+avian_cppflags = vm_cflags + [
+  '-DAVIAN_TARGET_ARCH=AVIAN_ARCH_' + ((target_arch == 'i386') ? 'X86' : target_arch.to_upper()),
+  '-DAVIAN_TARGET_FORMAT=AVIAN_FORMAT_' + target_format.to_upper(),
+]
+
 avian_includes = include_directories(
-    'src',
-    'include',
-    'classpath',
+  'src',
+  'include',
+  'classpath',
+  JAVA_HOME + '/include',
+  'src/jdk/include/' + target_platform,
 )
+
+avian_lflags = [
+  '-lm',
+  '-lz',
+  '-lws2_32',
+  '-lversion',
+  '-luuid',
+  '-liphlpapi',
+  '-lmswsock',
+]
 
 ############################################################
 # classpath
@@ -156,175 +177,16 @@ classpath_jar = custom_target('classpath_jar',
 )
 
 if bootimage == true
-  classpath_cppflags = [
+  avian_cppflags += [
     '-DBOOT_IMAGE',
     '-DAVIAN_CLASSPATH=""',
   ]
 else
-  classpath_cppflags = [
+  avian_cppflags += [
     '-DBOOT_CLASSPATH="[classpathJar]"',
     '-DAVIAN_CLASSPATH="[classpathJar]"',
   ]
 endif
 
-############################################################
-# type generator
-############################################################
-
-type_generator = executable('type_generator',
-  sources: [
-    'src/tools/type-generator/main.cpp',
-    'src/system/' + build_system + '.cpp',
-    'src/system/' + build_system + '/crash.cpp',
-    'src/system/' + build_system + '/memory.cpp',
-    'src/system/' + build_system + '/signal.cpp',
-    'src/finder.cpp',
-    'src/util/arg-parser.cpp'
-  ],
-  include_directories: avian_includes,
-  cpp_args: [ '-DPOINTER_SIZE=@0@'.format(pointer_size) ] + vm_cflags,
-  c_args: target_cflags,
-  dependencies: [threads, zlib_native],
-  native: true)
-
-generated_code = []
-
-foreach type: [
-    'enums',
-    'declarations',
-    'constructors',
-    'initializations',
-    'java-initializations',
-    'name-initializations',
-    'maps',
-  ]
-  generated_code += custom_target('type-' + type,
-    input:  'src/types.def',
-    output: 'type-' + type + '.h',
-    command: [type_generator, '-t', type,
-      '-cp', meson.current_build_dir() + '/classpath',
-      '-i', '@INPUT@', '-o', '@OUTPUT@'],
-    depends: classpath_classes
-  )
-endforeach
-
-############################################################
-# libavian
-############################################################
-
-compiler_sources = [
-  'src/codegen/compiler.cpp',
-  'src/codegen/compiler/context.cpp',
-  'src/codegen/compiler/promise.cpp',
-  'src/codegen/compiler/regalloc.cpp',
-  'src/codegen/compiler/resource.cpp',
-  'src/codegen/compiler/site.cpp',
-  'src/codegen/compiler/read.cpp',
-  'src/codegen/compiler/value.cpp',
-  'src/codegen/compiler/frame.cpp',
-  'src/codegen/compiler/ir.cpp',
-  'src/codegen/compiler/event.cpp',
-  'src/debug-util.cpp',
-  'src/codegen/runtime.cpp',
-  'src/codegen/targets.cpp',
-  'src/util/fixed-allocator.cpp',
-]
-
-x86_assembler_sources = [
-  'src/codegen/target/x86/assembler.cpp',
-  'src/codegen/target/x86/block.cpp',
-  'src/codegen/target/x86/context.cpp',
-  'src/codegen/target/x86/detect.cpp',
-  'src/codegen/target/x86/encode.cpp',
-  'src/codegen/target/x86/fixup.cpp',
-  'src/codegen/target/x86/multimethod.cpp',
-  'src/codegen/target/x86/operations.cpp',
-  'src/codegen/target/x86/padding.cpp',
-]
-
-arm_assembler_sources = [
-  'src/codegen/target/arm/assembler.cpp',
-  'src/codegen/target/arm/block.cpp',
-  'src/codegen/target/arm/context.cpp',
-  'src/codegen/target/arm/fixup.cpp',
-  'src/codegen/target/arm/multimethod.cpp',
-  'src/codegen/target/arm/operations32.cpp',
-  'src/codegen/target/arm/operations64.cpp',
-]
-
-if target_arch.startswith('arm')
-  assembler_sources = arm_assembler_sources
-else
-  assembler_sources = x86_assembler_sources
-endif
-
-vm_sources = [
-  'src/system/' + target_system + '.cpp',
-  'src/system/' + target_system + '/memory.cpp',
-  'src/system/' + target_system + '/crash.cpp',
-  'src/system/' + target_system + '/signal.cpp',
-  'src/finder.cpp',
-  'src/machine.cpp',
-  'src/util.cpp',
-  'src/heap/heap.cpp',
-  'src/' + process + '.cpp',
-  'src/classpath-' + classpath + '.cpp',
-  'src/builtin.cpp',
-  'src/jnienv.cpp',
-  'src/process.cpp',
-  'src/heapdump.cpp',
-  'src/' + target_arch + '.S',
-]
-
-if process == 'compile'
-  vm_sources += [
-    'src/compile-' + target_arch + '.S',
-  ]
-endif
-
-heapwalk_sources = [
-  'src/heapwalk.cpp',
-]
-
-libavian = library('avian',
-  sources: [
-    compiler_sources,
-    assembler_sources,
-    vm_sources,
-    heapwalk_sources,
-    classpath_cpp_sources,
-    generated_code,
-  ],
-  include_directories: [
-    avian_includes,
-    include_directories(
-      JAVA_HOME + '/include',
-      'jdk/include/' + target_platform,
-    )
-  ],
-  cpp_args: vm_cflags + classpath_cppflags + [
-    '-DAVIAN_TARGET_ARCH=AVIAN_ARCH_' + ((target_arch == 'i386') ? 'X86' : target_arch.to_upper()),
-    '-DAVIAN_TARGET_FORMAT=AVIAN_FORMAT_' + target_format.to_upper(),
-  ],
-  c_args: target_cflags,
-  dependencies: [threads, zlib])
-
-############################################################
-# binary_to_object
-############################################################
-
-binary_to_object = executable('binary_to_object',
-  sources: [
-    'src/tools/object-writer/elf.cpp',
-    'src/tools/object-writer/mach-o.cpp',
-    'src/tools/object-writer/pe.cpp',
-    'src/tools/object-writer/tools.cpp',
-    'src/tools/binary-to-object/main.cpp',
-  ],
-  include_directories: avian_includes,
-  cpp_args: vm_cflags + [
-    '-D__STDC_CONSTANT_MACROS',
-    '-DAVIAN_TARGET_ARCH=AVIAN_ARCH_UNKNOWN',
-    '-DAVIAN_TARGET_FORMAT=AVIAN_FORMAT_UNKNOWN',
-  ],
-  native: true)
+subdir('src')
+subdir('test')
